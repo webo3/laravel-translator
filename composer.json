@@ -2,6 +2,7 @@
     "name": "webo3/laravel-translator",
     "description": "This package add artisan commands to scan/export/import translations.",
     "license": "MIT",
+    "homepage": "https://www.webo3.com",
     "authors": [
         {
             "name": "Hugues Joyal",

@@ -1,5 +1,5 @@
 {
-    "name": "webo3/translator",
+    "name": "webo3/laravel-translator",
     "description": "This package add artisan commands to scan/export/import translations.",
     "license": "MIT",
     "authors": [

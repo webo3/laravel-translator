@@ -1,0 +1,29 @@
+{
+    "name": "webo3/translator",
+    "description": "This package add artisan commands to scan/export/import translations.",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Hugues Joyal",
+            "email": "hjoyal@webo3.com"
+        }
+    ],
+    "require": {
+        "php" : ">=7.0"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^5.7|6.2|^7.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "webO3\\Translator\\": "src"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "webO3\\Translator\\TranslatorServiceProvider"
+            ]
+        }
+    }
+}

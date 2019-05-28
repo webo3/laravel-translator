@@ -1,6 +1,6 @@
 <?php
 
-namespace webO3\Translator;
+namespace webO3\Translator\Providers;
 
 use Illuminate\Support\ServiceProvider;
 use webO3\Translator\Console\Commands\Export;

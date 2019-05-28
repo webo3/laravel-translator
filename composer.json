@@ -23,7 +23,7 @@
         },
         "laravel": {
             "providers": [
-                "webO3\\Translator\\TranslatorServiceProvider"
+                "webO3\\Translator\\Providers\\TranslatorServiceProvider"
             ]
         }
     }

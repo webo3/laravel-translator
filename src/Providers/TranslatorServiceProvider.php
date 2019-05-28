@@ -18,7 +18,7 @@ class TranslatorServiceProvider extends ServiceProvider
     {
         // Merge configurations
         $this->mergeConfigFrom(
-            __DIR__.'/config/webo3-translator.php', 'webo3-translator'
+            __DIR__.'/../config/webo3-translator.php', 'webo3-translator'
         );
     }
 
@@ -32,7 +32,7 @@ class TranslatorServiceProvider extends ServiceProvider
 
         // Publish config
         $this->publishes([
-            __DIR__.'/config/webo3-translator.php' => config_path('webo3-translator.php'),
+            __DIR__.'/../config/webo3-translator.php' => config_path('webo3-translator.php'),
         ], 'config');
 
         // Publish commands

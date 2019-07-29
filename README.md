@@ -5,7 +5,7 @@ The package helps you manage your translations via artisan commands. Package aut
 ### For Laravel < 5.5
 You need to register the provider in app.php:
 ```php
-webO3\Translator\TranslatorServiceProvider::class,
+webO3\Translator\Providers\TranslatorServiceProvider::class,
 ```
 
 ## Configuration
@@ -13,7 +13,7 @@ You need to specify which languages you would like to manage with the extensions
 
 To create the file config/webo3-translator.php use the following command:
 ```bash
-php artisan vendor:publish --provider=webO3\\Translator\\TranslatorServiceProvider --tag=config
+php artisan vendor:publish --provider=webO3\\Translator\\Providers\\TranslatorServiceProvider --tag=config
 ```
 
 

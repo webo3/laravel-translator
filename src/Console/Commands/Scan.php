@@ -68,7 +68,7 @@ class Scan extends Command
             $contents = preg_replace('#/\*(.*?)\*/#is', '', $contents);
 
             // Extract function __()
-            if (preg_match_all('#(__|@lang|\.t|\$t)\((\'|"|`)(.*?)(\2),?.*?\)\;?#is', $contents, $matches)) {
+            if (preg_match_all('#(Lang::get|__|@lang|\.t|\$t)\((\'|"|`)(.*?)(\2),?.*?\)\;?#is', $contents, $matches)) {
                 $count = sizeof($matches[3]);
 
                 for ($i=0; $i<$count; $i++) {

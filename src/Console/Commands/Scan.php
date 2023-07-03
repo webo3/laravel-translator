@@ -68,11 +68,12 @@ class Scan extends Command
             $contents = preg_replace('#/\*(.*?)\*/#is', '', $contents);
 
             // Extract function __()
-            if (preg_match_all('#(Lang::get|__|@lang|\.t|\$t)\((\'|"|`)(.*?)(\2),?.*?\)\;?#is', $contents, $matches)) {
-                $count = sizeof($matches[3]);
+            // Borrowed from https://github.com/amiranagram/localizator/blob/7bbc5bc2db63f4ad518ba94d3eecc0a418bdccf2/src/Services/Parser.php#L104C13-L104C13
+            if (preg_match_all('/(Lang::get|__|@lang)\([\r\n\s]{0,}\h*[\'"](.+)[\'"]\h*[\r\n\s]{0,}[),]/U', $contents, $matches)) {
+                $count = sizeof($matches[2]);
 
                 for ($i=0; $i<$count; $i++) {
-                    $key = trim($matches[3][$i]);
+                    $key = str_replace(["\'", '\"'], ["'", '"'], trim($matches[2][$i]));
                     if (!in_array($key, $keys)) {
                         $keys[] = $key;
                         $totalKeys++;

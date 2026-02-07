@@ -47,7 +47,8 @@ class Scan extends Command
         $keys = [];
 
         // Scan all source files and collect unique translation keys
-        foreach ($finder->in([app_path(), resource_path()]) as $file) {
+        $scanPaths = config('webo3-translator.scan_paths', [app_path(), resource_path()]);
+        foreach ($finder->in($scanPaths) as $file) {
             $totalFiles++;
             $contents = file_get_contents($file->getRealPath());
             $extension = $file->getExtension();
@@ -68,9 +69,10 @@ class Scan extends Command
         $rows = [];
 
         // Create or update the JSON file for each configured language
+        $langPath = config('webo3-translator.lang_path', resource_path('lang'));
         $languages = config('webo3-translator.languages');
         foreach ($languages as $language) {
-            $languageFile = resource_path('lang/'.$language.'.json');
+            $languageFile = $langPath . '/' . $language . '.json';
 
             $json = '';
             $data = [];

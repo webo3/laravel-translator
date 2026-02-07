@@ -17,6 +17,10 @@ abstract class IntegrationTestCase extends TestCase
     protected function defineEnvironment($app): void
     {
         $app['config']->set('webo3-translator.languages', ['en', 'fr']);
+        $app['config']->set('webo3-translator.lang_path', resource_path('lang'));
+        $app['config']->set('webo3-translator.export_path', null);
+        $app['config']->set('webo3-translator.scan_paths', [resource_path()]);
+        $app['config']->set('webo3-translator.format', 'csv');
     }
 
     /**

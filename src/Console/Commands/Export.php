@@ -3,83 +3,54 @@
 namespace webO3\Translator\Console\Commands;
 
 use Illuminate\Console\Command;
+use webO3\Translator\Formatters\CsvFormatter;
+use webO3\Translator\Formatters\XliffFormatter;
 
 /**
- * Export translation JSON files to a single CSV for external translators.
+ * Export translation JSON files for external translators.
  *
- * Reads resources/lang/{language}.json for each configured language and
- * produces resources/lang/translations.csv with columns: key | en | fr | ...
- *
- * Untranslated values (where value == key) are exported as empty cells.
- * The CSV includes a UTF-8 BOM so Excel opens it correctly.
+ * Reads {lang_path}/{language}.json for each configured language and
+ * produces translation files in the configured format (CSV or XLIFF).
  */
 class Export extends Command
 {
     protected $signature = 'translations:export';
-    protected $description = 'Export language JSON files to resources/lang/translations.csv';
+    protected $description = 'Export language JSON files to a translation file (CSV or XLIFF)';
 
     public function handle()
     {
-        ini_set('auto_detect_line_endings', true);
-
-        $keys = [];
-        $rows = [];
-        $headers = ['key'];
-
-        $x = 0;
-        $y = 0;
-
-        // Aggregate all keys and translations from each language JSON file
+        $langPath = config('webo3-translator.lang_path', resource_path('lang'));
+        $exportPath = config('webo3-translator.export_path') ?: $langPath;
         $languages = config('webo3-translator.languages');
+
+        // Load translations from JSON files
+        $translations = [];
         foreach ($languages as $language) {
-            $languageFile = resource_path('lang/'.$language.'.json');
-
-            $y++;
-            $json = '';
-            $data = [];
-
-            if (file_exists($languageFile)) {
-                $json = file_get_contents($languageFile);
-                $data = json_decode($json, true);
-
-                foreach ($data as $key => $value) {
-                    if (!in_array($key, $keys)) {
-                        $keys[] = $key;
-                    }
-
-                    $x = array_search($key, $keys) + 1;
-                    $rows[$x][0] = $key;
-                    // Leave cell empty if the value is still the key itself (untranslated)
-                    $rows[$x][$y] = ($value == $key ? "" : $value);
-                }
-
-                $headers[$y] = $language;
+            $file = $langPath . '/' . $language . '.json';
+            $translations[$language] = [];
+            if (file_exists($file)) {
+                $translations[$language] = json_decode(file_get_contents($file), true) ?: [];
             }
         }
 
-        // Write CSV with UTF-8 BOM for Excel compatibility
-        $transFile = resource_path('lang/translations.csv');
-        $fp = fopen($transFile, 'w');
-
-        $bom = chr(0xEF) . chr(0xBB) . chr(0xBF);
-        fputs($fp, $bom);
-        $totalColumns = count($headers);
-        fputcsv($fp, $headers);
-        foreach ($rows as $row) {
-            // Fill missing language columns with empty strings
-            for ($i = 0; $i < $totalColumns; $i++) {
-                if (!isset($row[$i])) {
-                    $row[$i] = '';
-                }
-            }
-            ksort($row);
-            fputcsv($fp, $row);
-        }
-
-        fclose($fp);
+        $formatter = $this->resolveFormatter();
+        $createdFiles = $formatter->export($languages, $translations, $exportPath);
 
         $this->info("Translations exportation completed!");
-        $this->info("File exported to: {$transFile}");
+        foreach ($createdFiles as $file) {
+            $this->info("File exported to: {$file}");
+        }
         $this->line("");
+    }
+
+    private function resolveFormatter()
+    {
+        $format = config('webo3-translator.format', 'csv');
+
+        if ($format === 'xliff') {
+            return new XliffFormatter();
+        }
+
+        return new CsvFormatter();
     }
 }

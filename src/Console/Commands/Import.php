@@ -3,84 +3,46 @@
 namespace webO3\Translator\Console\Commands;
 
 use Illuminate\Console\Command;
+use webO3\Translator\Formatters\CsvFormatter;
+use webO3\Translator\Formatters\XliffFormatter;
 
 /**
- * Import translations from CSV back into language JSON files.
+ * Import translations from a file back into language JSON files.
  *
- * Reads resources/lang/translations.csv (produced by translations:export)
- * and merges the translated values into resources/lang/{language}.json.
+ * Reads the translation file (CSV or XLIFF) produced by translations:export
+ * and merges the translated values into {lang_path}/{language}.json.
  *
  * - New keys are added
  * - Changed translations are updated
- * - Empty CSV cells default to the key itself
+ * - Empty values default to the key itself
  * - Keys are sorted alphabetically after merge
- * - Handles UTF-8 BOM produced by Excel
  */
 class Import extends Command
 {
     protected $signature = 'translations:import';
-    protected $description = 'Import translations from resources/lang/translations.csv into JSON files';
+    protected $description = 'Import translations from a translation file (CSV or XLIFF) into JSON files';
 
     public function handle()
     {
-        $this->info("Importing texts from lang/translations.csv");
+        $langPath = config('webo3-translator.lang_path', resource_path('lang'));
+        $exportPath = config('webo3-translator.export_path') ?: $langPath;
 
-        ini_set('auto_detect_line_endings', true);
+        $this->info("Importing translations...");
 
-        $headers = [];
-        $datas = [];
-        $updated = 0;
-        $added = 0;
-        $numLine = 0;
+        $formatter = $this->resolveFormatter();
+        $importedData = $formatter->import($exportPath);
+
         $statuses = [];
 
-        // Read and parse the CSV file
-        $transFile = resource_path('lang/translations.csv');
-        if (($handle = fopen($transFile, "r")) !== false) {
-            // Skip UTF-8 BOM if present
-            $bom = chr(0xEF) . chr(0xBB) . chr(0xBF);
-            if (fgets($handle, 4) !== $bom) {
-                rewind($handle);
+        foreach ($importedData as $language => $texts) {
+            $languageFile = $langPath . '/' . $language . '.json';
+            $updated = 0;
+            $added = 0;
+
+            $data = [];
+            if (file_exists($languageFile)) {
+                $data = json_decode(file_get_contents($languageFile), true) ?: [];
             }
-
-            while (($line = fgetcsv($handle)) !== false) {
-                $numLine++;
-
-                if (empty($headers)) {
-                    // First row: map column names to indices (key, en, fr, ...)
-                    foreach ($line as $key => $value) {
-                        $value = trim($value);
-                        $key = trim($key);
-                        $headers[$value] = $key;
-                        if ($value != 'key') {
-                            $datas[$value] = [];
-                        }
-                    }
-                } else {
-                    // Data rows: group translations by language
-                    $keyIdx = $headers['key'];
-                    $keyData = $line[$keyIdx];
-
-                    foreach ($headers as $key => $value) {
-                        if ($value != $keyIdx) {
-                            $datas[$key][$keyData] = isset($line[$value]) ? $line[$value] : $keyData;
-                        }
-                    }
-                }
-            }
-            fclose($handle);
-        }
-
-        $totalLang = count($datas);
-        $this->warn("Total languages in the file: {$totalLang}");
-        $this->warn("Total lines to merge: {$numLine}");
-
-        // Merge CSV data into each language JSON file
-        foreach ($datas as $language => $texts) {
-            $languageFile = resource_path('lang/'.$language.'.json');
-
-            $json = file_get_contents($languageFile);
-            $data = json_decode($json, true);
 
             foreach ($texts as $key => $value) {
                 // Add new keys
@@ -89,7 +51,7 @@ class Import extends Command
                     $data[$key] = ($value == '' ? $key : $value);
                 }
                 // Update changed translations
-                if ($data[$key] != $value) {
+                elseif ($data[$key] != $value) {
                     $updated++;
                     $data[$key] = ($value == '' ? $key : $value);
                 }
@@ -107,5 +69,16 @@ class Import extends Command
 
         $this->info("Translations importation completed!");
         $this->line("");
+    }
+
+    private function resolveFormatter()
+    {
+        $format = config('webo3-translator.format', 'csv');
+
+        if ($format === 'xliff') {
+            return new XliffFormatter();
+        }
+
+        return new CsvFormatter();
     }
 }

@@ -4,7 +4,7 @@
     "license": "MIT",
     "homepage": "https://www.webo3.com",
     "require": {
-        "php" : "^8.2"
+        "php" : "^7.3|^8.0"
     },
     "require-dev": {
         "orchestra/testbench": "^9.0|^10.0",

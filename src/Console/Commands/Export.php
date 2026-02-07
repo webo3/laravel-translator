@@ -63,8 +63,16 @@ class Export extends Command
 
         $bom = chr(0xEF) . chr(0xBB) . chr(0xBF);
         fputs($fp, $bom);
+        $totalColumns = count($headers);
         fputcsv($fp, $headers);
         foreach ($rows as $row) {
+            // Fill missing language columns with empty strings
+            for ($i = 0; $i < $totalColumns; $i++) {
+                if (!isset($row[$i])) {
+                    $row[$i] = '';
+                }
+            }
+            ksort($row);
             fputcsv($fp, $row);
         }
 

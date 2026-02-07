@@ -1,93 +1,148 @@
 ## Laravel Translator
 
-The package helps you manage your translations via artisan commands. Package auto-discovery is enabled with Laravel >= 5.5.
+A Laravel package that provides artisan commands to scan, export and import translation strings. It extracts translation keys from your source code, manages JSON language files, and supports a CSV-based workflow for working with translators.
 
-### For Laravel < 5.5
-You need to register the provider in app.php:
+### Supported translation functions
+
+| Function | File types | Example |
+| --- | --- | --- |
+| `__()` | PHP, JS, TS, Vue | `__('Hello world')` |
+| `Lang::get()` | PHP | `Lang::get('messages.welcome')` |
+| `@lang()` | PHP (Blade) | `@lang('Please login')` |
+| `$t()` | JS, TS, Vue | `$t('Vue key')` |
+| `.t()` | JS, TS, Vue | `i18n.t('My key')` |
+
+### Quote handling
+
+- Single quotes: `__('key')`
+- Double quotes: `__("key")`
+- Escaped quotes: `__('It\'s a test')` correctly extracts `It's a test`
+- Backtick template literals (JS/TS/Vue only): `` __(`multi-line key`) ``
+- Backticks are ignored in PHP files (where they are the shell execution operator)
+
+### Installation
+
+```bash
+composer require webo3/laravel-translator
+```
+
+Package auto-discovery is enabled for Laravel >= 5.5. For older versions, register the provider manually in `config/app.php`:
+
 ```php
-webO3\Translator\Providers\TranslatorServiceProvider::class,
+'providers' => [
+    webO3\Translator\Providers\TranslatorServiceProvider::class,
+],
 ```
 
 ## Configuration
-You need to specify which languages you would like to manage with the extensions.
 
-To create the file config/webo3-translator.php use the following command:
+Publish the configuration file to specify which languages to manage:
+
 ```bash
-php artisan vendor:publish --provider=webO3\\Translator\\Providers\\TranslatorServiceProvider --tag=config
+php artisan vendor:publish --provider="webO3\Translator\Providers\TranslatorServiceProvider" --tag=config
 ```
 
+This creates `config/webo3-translator.php` where you define your languages:
 
-### Scanning and extracting translations
-The package works by scanning the source code for translations using the function __().
+```php
+return [
+    'languages' => [
+        'en',
+        'fr',
+    ]
+];
+```
 
-The translations:scan command it will scan for __() function the files in the app and the resources folder with the following extensions : *.php, *.js, *.vue. It will then create a file for each enabled language to resources/lang/{language}.json with all the translations key/values pair.
+## Usage
 
-The JSON file will be loaded by Laravel to translate the strings you use in the source code by default.
+### 1. Scan and extract translations
 
-To scan and extract the translation, use the following command:
+Scans `*.php`, `*.js`, `*.ts` and `*.vue` files in `app/` and `resources/` for translation function calls. Extracts unique keys and creates/updates a JSON file for each configured language at `resources/lang/{language}.json`.
+
 ```bash
 php artisan translations:scan
 ```
 
+- New keys are added with the key itself as the default value
+- Existing translations are preserved
+- Keys are sorted alphabetically
+- Comments (`//` and `/* */`) are stripped before scanning, but `//` inside strings (e.g. URLs) is preserved
 
-### Exporting translations
-For help with translations, we use a script that will export all JSON content to a .csv file that we could then share in Excel or in its original CSV format. In the file, we will have multiple columns, one for the key and one by language. The key is the string used in our __() function. If the translations don't exist, it will use it instead. Here's an example if the French and English languages are enabled in our configuration file.
+### 2. Export translations to CSV
 
-| key | en | fr |
-| --- | --- | --- |
-| This is an example key. | This is an example key. | Ceci est un exemple de clés. |
-| This key as an error. | This key has an error. | Cette clé à une erreur. |
+Reads all language JSON files and exports them to a single CSV file at `resources/lang/translations.csv`. The CSV includes a UTF-8 BOM for Excel compatibility.
 
-When we ship this file to our translator, we need to specify to them to not touch the key column, that our reference for translating. If they are an error in the key it doesn't matter, just correct it in the language column.
-
-To create the translations.csv file use the following command:
 ```bash
 php artisan translations:export
 ```
 
-### Importing translations
-Now that we have translated the CSV file, put it back and import it with the following command :
+The CSV format:
+
+| key | en | fr |
+| --- | --- | --- |
+| Hello world | Hello world | Bonjour le monde |
+| Goodbye | Goodbye | Au revoir |
+
+Untranslated values (where the value equals the key) appear as empty cells in the CSV.
+
+### 3. Import translations from CSV
+
+Reads `resources/lang/translations.csv` and merges the translated values back into the JSON language files.
 
 ```bash
 php artisan translations:import
 ```
 
+- New keys from the CSV are added
+- Existing translations are updated if the CSV has a different value
+- Empty cells default to the key itself
+- Keys are sorted alphabetically after import
 
-## Using translations file in Vue
-To be able to use the JSON file in Vue we need to add a NPM package. (vue-i18n).
+### Typical workflow
+
+1. Write code using `__('key')`, `$t('key')`, etc.
+2. Run `php artisan translations:scan` to extract all keys
+3. Run `php artisan translations:export` to generate the CSV
+4. Send the CSV to your translator
+5. Place the translated CSV back at `resources/lang/translations.csv`
+6. Run `php artisan translations:import` to merge translations back
+
+## Using translations in Vue
+
+Install the vue-i18n package:
 
 ```bash
 npm install vue-i18n --save-dev
 ```
 
-Add the following in the app.js file.
+Set up vue-i18n in your `app.js`:
+
 ```js
-// Load translations
-let text_fr = require('../lang/fr.json');
-let text_en = require('../lang/en.json');
+import { createI18n } from 'vue-i18n';
+import en from '../lang/en.json';
+import fr from '../lang/fr.json';
 
-// Define the current locale
-let locale = 'en';
-
-// Init VueI18n
-import VueI18n from 'vue-i18n';
-Vue.use(VueI18n);
-window.i18n = new VueI18n({
-    locale: locale,
-    silentTranslationWarn: true,
-    messages: {
-        "en": text_en,
-        "fr": text_fr
-    }
+const i18n = createI18n({
+    locale: 'en',
+    messages: { en, fr }
 });
+
+app.use(i18n);
 ```
 
-It will then be possible to use the VueI18n to translate our VueJs template using the functions $t() or i18n.t();
-```js
-i18n.t('This is an example key.')
-```
+Then use `$t()` or `i18n.t()` in your templates:
 
-Or in the vue template :
 ```html
-<a :title="$t('This is an example key.')">{{ $t('This is an example key.') }}</a>
+<a :title="$t('Hello world')">{{ $t('Hello world') }}</a>
 ```
+
+## Testing
+
+```bash
+composer test              # Run tests without coverage
+composer test-coverage     # Run tests with coverage report
+```
+
+## License
+
+MIT

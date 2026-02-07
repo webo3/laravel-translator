@@ -1,1 +1,13 @@
 .DS_Store
+/vendor/
+composer.lock
+.phpunit.result.cache
+.phpunit.cache/
+.php-cs-fixer.cache
+.idea/
+.vscode/
+*.swp
+*.swo
+coverage-report/
+phpunit.xml
+.env

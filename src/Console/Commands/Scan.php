@@ -4,110 +4,88 @@ namespace webO3\Translator\Console\Commands;
 
 use Illuminate\Console\Command;
 use Symfony\Component\Finder\Finder;
+use webO3\Translator\TranslationScanner;
 
+/**
+ * Scan source files for translation keys and update language JSON files.
+ *
+ * Scans *.php, *.js, *.ts and *.vue files in app/ and resources/ for
+ * calls to __(), Lang::get(), @lang(), $t() and .t(). Extracted keys are
+ * added to resources/lang/{language}.json for each configured language.
+ *
+ * Detected patterns per file type:
+ *   PHP:          __(), Lang::get(), @lang()
+ *   JS/TS/Vue:    __(), $t(), .t()
+ *
+ * Quote handling:
+ *   - Single and double quotes with escaped quote support
+ *   - Backtick template literals (JS/TS/Vue only, ignored in PHP)
+ *
+ * @see \webO3\Translator\TranslationScanner
+ */
 class Scan extends Command
 {
-    /**
-     * The name and signature of the console command.
-     *
-     * @var string
-     */
     protected $signature = 'translations:scan';
+    protected $description = 'Scan source files for translation keys and update language JSON files';
 
-    /**
-     * The console command description.
-     *
-     * @var string
-     */
-    protected $description = 'Scan files for texts to be extracted and convert them to JSON';
-
-    /**
-     * Create a new command instance.
-     *
-     * @return void
-     */
-    public function __construct()
-    {
-        parent::__construct();
-    }
-
-    /**
-     * Execute the console command.
-     *
-     * @return mixed
-     */
     public function handle()
     {
+        $scanner = new TranslationScanner();
+
         $finder = new Finder();
         $finder->files()
             ->ignoreVCS(true)
             ->ignoreDotFiles(true)
             ->ignoreUnreadableDirs(true)
             ->name('*.js')
+            ->name('*.ts')
             ->name('*.php')
             ->name('*.vue');
 
         $this->info("Extracting texts from files");
         $totalFiles = 0;
-        $totalKeys = 0;
-
-        // Get all texts keys
         $keys = [];
 
+        // Scan all source files and collect unique translation keys
         foreach ($finder->in([app_path(), resource_path()]) as $file) {
             $totalFiles++;
-            $filePath = $file->getRealPath();
+            $contents = file_get_contents($file->getRealPath());
+            $extension = $file->getExtension();
 
-            // get clean file content
-            $contents = file_get_contents($filePath);
-
-            // delete line comments
-            $contents = preg_replace("#(//.*?)$#m", '', $contents);
-
-            // delete multiline comments
-            $contents = preg_replace('#/\*(.*?)\*/#is', '', $contents);
-
-            // Extract function __()
-            if (preg_match_all('#(Lang::get|__|@lang|\.t|\$t)\((\'|"|`)(.*?)(\2),?.*?\)\;?#is', $contents, $matches)) {
-                $count = sizeof($matches[3]);
-
-                for ($i=0; $i<$count; $i++) {
-                    $key = trim($matches[3][$i]);
-                    if (!in_array($key, $keys)) {
-                        $keys[] = $key;
-                        $totalKeys++;
-                    }
+            $fileKeys = $scanner->extractKeys($contents, $extension);
+            foreach ($fileKeys as $key) {
+                if (!in_array($key, $keys, true)) {
+                    $keys[] = $key;
                 }
             }
         }
 
-        $this->warn("Total number of files scanned: ${totalFiles}");
-        $this->warn("Number of extracted keys: ${totalKeys}");
+        $totalKeys = count($keys);
+
+        $this->warn("Total number of files scanned: {$totalFiles}");
+        $this->warn("Number of extracted keys: {$totalKeys}");
 
         $rows = [];
 
-        // Update and prepare files
+        // Create or update the JSON file for each configured language
         $languages = config('webo3-translator.languages');
         foreach ($languages as $language) {
             $languageFile = resource_path('lang/'.$language.'.json');
 
-            // Reset vars
             $json = '';
             $data = [];
             $created = 0;
             $added = 0;
 
-            // Create the file
             if (!file_exists($languageFile)) {
                 touch($languageFile);
                 $created = 1;
             } else {
-                // Load the file
                 $json = file_get_contents($languageFile);
                 $data = json_decode($json, true);
             }
 
-            // New keys
+            // Add new keys (default value = key itself), preserve existing translations
             foreach ($keys as $key) {
                 if (!isset($data[$key]) || $data[$key] == '') {
                     $added++;
@@ -116,18 +94,13 @@ class Scan extends Command
             }
 
             ksort($data);
-
-            // Prepare language
             $rows[] = [$language, $created, $added];
 
-            // Write the file
             $json = json_encode($data, JSON_PRETTY_PRINT);
             file_put_contents($languageFile, $json);
         }
 
-        $this->table([
-            'Language', 'Created', 'Added'
-        ], $rows);
+        $this->table(['Language', 'Created', 'Added'], $rows);
 
         $this->info("Files scan extraction completed!");
         $this->line("");

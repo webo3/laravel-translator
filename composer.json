@@ -3,18 +3,21 @@
     "description": "This package add artisan commands to scan/export/import translations.",
     "license": "MIT",
     "homepage": "https://www.webo3.com",
-    "authors": [
-        {
-            "name": "Hugues Joyal",
-            "email": "hjoyal@webo3.com"
-        }
-    ],
     "require": {
         "php" : ">=7.0"
+    },
+    "require-dev": {
+        "orchestra/testbench": "^9.0|^10.0",
+        "phpunit/phpunit": "^9.5|^10.0|^11.0"
     },
     "autoload": {
         "psr-4": {
             "webO3\\Translator\\": "src"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "webO3\\Translator\\Tests\\": "tests"
         }
     },
     "extra": {
@@ -26,5 +29,9 @@
                 "webO3\\Translator\\Providers\\TranslatorServiceProvider"
             ]
         }
+    },
+    "scripts": {
+        "test": "vendor/bin/phpunit --no-coverage",
+        "test-coverage": "vendor/bin/phpunit"
     }
 }

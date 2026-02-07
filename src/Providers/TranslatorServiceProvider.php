@@ -7,35 +7,29 @@ use webO3\Translator\Console\Commands\Export;
 use webO3\Translator\Console\Commands\Import;
 use webO3\Translator\Console\Commands\Scan;
 
+/**
+ * Registers the translator artisan commands and publishes the config file.
+ *
+ * Commands:
+ *   translations:scan    - Scan source files for translation keys
+ *   translations:export  - Export translations to CSV
+ *   translations:import  - Import translations from CSV
+ */
 class TranslatorServiceProvider extends ServiceProvider
 {
-    /**
-     * Register services.
-     *
-     * @return void
-     */
     public function register()
     {
-        // Merge configurations
         $this->mergeConfigFrom(
             __DIR__.'/../config/webo3-translator.php', 'webo3-translator'
         );
     }
 
-    /**
-     * Bootstrap services.
-     *
-     * @return void
-     */
     public function boot()
     {
-
-        // Publish config
         $this->publishes([
             __DIR__.'/../config/webo3-translator.php' => config_path('webo3-translator.php'),
         ], 'config');
 
-        // Publish commands
         if ($this->app->runningInConsole()) {
             $this->commands([
                 Export::class,

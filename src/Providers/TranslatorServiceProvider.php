@@ -6,6 +6,7 @@ use Illuminate\Support\ServiceProvider;
 use webO3\Translator\Console\Commands\Export;
 use webO3\Translator\Console\Commands\Import;
 use webO3\Translator\Console\Commands\Scan;
+use webO3\Translator\Console\Commands\Translate;
 
 /**
  * Registers the translator artisan commands and publishes the config file.
@@ -35,6 +36,7 @@ class TranslatorServiceProvider extends ServiceProvider
                 Export::class,
                 Import::class,
                 Scan::class,
+                Translate::class,
             ]);
         }
     }

@@ -64,4 +64,33 @@ return [
 
     'format' => 'csv',
 
+    /*
+    |--------------------------------------------------------------------------
+    | Translation Driver
+    |--------------------------------------------------------------------------
+    |
+    | The driver used by translations:translate for auto-translation.
+    | Supported: 'google_free'
+    |
+    | google_free: Uses stichoza/google-translate-php (no API key required).
+    |              Install with: composer require stichoza/google-translate-php
+    |
+    */
+
+    'translation_driver' => 'google_free',
+
+    /*
+    |--------------------------------------------------------------------------
+    | Translation Driver Options
+    |--------------------------------------------------------------------------
+    |
+    | Driver-specific options. Reserved for future drivers that may require
+    | API keys or custom endpoints.
+    |
+    */
+
+    'translation_options' => [
+        // 'api_key' => env('TRANSLATION_API_KEY'),
+    ],
+
 ];

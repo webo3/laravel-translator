@@ -1,6 +1,6 @@
 ## Laravel Translator
 
-A Laravel package that provides artisan commands to scan, export and import translation strings. It extracts translation keys from your source code, manages JSON language files, and supports CSV and XLIFF workflows for working with translators.
+A Laravel package that provides artisan commands to scan, export, import and auto-translate translation strings. It extracts translation keys from your source code, manages JSON language files, supports CSV and XLIFF workflows for working with translators, and can automatically translate using the Google Translate API.
 
 ### Supported translation functions
 
@@ -60,6 +60,12 @@ return [
 
     // Export format: 'csv' or 'xliff'
     'format' => 'csv',
+
+    // Translation driver for auto-translate: 'google_free'
+    'translation_driver' => 'google_free',
+
+    // Driver-specific options
+    'translation_options' => [],
 ];
 ```
 
@@ -117,14 +123,82 @@ php artisan translations:import
 - Keys are sorted alphabetically after import
 - The import format is determined by the `format` config option (same as export)
 
+### 4. Auto-translate with an API
+
+Automatically translates untranslated keys using a translation API and saves the results directly to your JSON language files.
+
+First, install the Google Translate package:
+
+```bash
+composer require stichoza/google-translate-php
+```
+
+Then run:
+
+```bash
+php artisan translations:translate
+```
+
+This translates all untranslated keys (where value equals the key) from the source language to every other configured language.
+
+#### Options
+
+| Option | Description |
+| --- | --- |
+| `--lang=fr,es` | Only translate specific target languages |
+| `--force` | Re-translate keys that already have translations |
+| `--driver=google_free` | Override the translation driver from config |
+| `--batch-size=50` | Number of strings per API call (default: 50) |
+
+#### Placeholder preservation
+
+The command automatically preserves Laravel and Vue placeholders during translation:
+
+- Laravel style: `:name`, `:count`, `:attribute`
+- Brace style: `{name}`, `{count}`, `{item}`
+
+These are masked before sending to the API and restored in the translated result.
+
+#### Case deduplication
+
+Keys that differ only in letter case (e.g. `"Hello"`, `"hello"`, `"HELLO"`) are deduplicated into a single API call. The translated result is then adjusted to match each variant's casing (uppercase, lowercase, title case).
+
+#### Configuration
+
+Two config keys control auto-translation:
+
+```php
+// Translation driver: 'google_free'
+'translation_driver' => 'google_free',
+
+// Driver-specific options (reserved for future drivers)
+'translation_options' => [
+    // 'api_key' => env('TRANSLATION_API_KEY'),
+],
+```
+
+#### Custom drivers
+
+You can register your own translation driver by binding it in the service container:
+
+```php
+$this->app->singleton('translation.driver.my_driver', function () {
+    return new MyCustomDriver(); // must implement TranslatorDriverInterface
+});
+```
+
+Then use it with `--driver=my_driver` or set `'translation_driver' => 'my_driver'` in config.
+
 ### Typical workflow
 
 1. Write code using `__('key')`, `$t('key')`, etc.
 2. Run `php artisan translations:scan` to extract all keys
-3. Run `php artisan translations:export` to generate translation file(s)
-4. Send the file(s) to your translator (CSV or XLIFF)
-5. Place the translated file(s) back in the export path
-6. Run `php artisan translations:import` to merge translations back
+3. Either:
+   - **Auto-translate**: Run `php artisan translations:translate` to translate via API
+   - **Manual workflow**: Export → send to translator → import:
+     1. `php artisan translations:export`
+     2. Send the file(s) to your translator
+     3. `php artisan translations:import`
 
 ## Using translations in Vue
 

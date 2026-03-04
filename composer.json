@@ -6,6 +6,9 @@
     "require": {
         "php" : "^7.3|^8.0"
     },
+    "suggest": {
+        "stichoza/google-translate-php": "Required for the google_free translation driver (~5.1)"
+    },
     "require-dev": {
         "orchestra/testbench": "^9.0|^10.0",
         "phpunit/phpunit": "^9.5|^10.0|^11.0"

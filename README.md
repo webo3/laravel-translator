@@ -84,6 +84,16 @@ php artisan translations:scan
 - Keys are sorted alphabetically
 - Comments (`//` and `/* */`) are stripped before scanning, but `//` inside strings (e.g. URLs) is preserved
 
+#### Clean unused keys
+
+Add the `--clean` option to detect and remove translation keys that are no longer used in your source files:
+
+```bash
+php artisan translations:scan --clean
+```
+
+This will scan your code, then compare existing keys in each language JSON file against the keys found in source. Unused keys are listed in a table and you are prompted for confirmation before they are removed.
+
 ### 2. Export translations
 
 Reads all language JSON files and exports them in the configured format.

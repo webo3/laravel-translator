@@ -25,7 +25,7 @@ use webO3\Translator\TranslationScanner;
  */
 class Scan extends Command
 {
-    protected $signature = 'translations:scan';
+    protected $signature = 'translations:scan {--clean : Remove translation keys no longer found in source files}';
     protected $description = 'Scan source files for translation keys and update language JSON files';
 
     public function handle()
@@ -106,5 +106,79 @@ class Scan extends Command
 
         $this->info("Files scan extraction completed!");
         $this->line("");
+
+        // Clean unused keys if --clean option is set
+        if ($this->option('clean')) {
+            $this->line("");
+            $this->info("Scanning for unused translation keys...");
+
+            $unusedKeysPerLang = [];
+            $allUnusedKeys = [];
+
+            foreach ($languages as $language) {
+                $languageFile = $langPath . '/' . $language . '.json';
+                if (!file_exists($languageFile)) {
+                    continue;
+                }
+
+                $data = json_decode(file_get_contents($languageFile), true) ?: [];
+                $unusedKeys = array_diff(array_keys($data), $keys);
+                if (!empty($unusedKeys)) {
+                    $unusedKeysPerLang[$language] = $unusedKeys;
+                    foreach ($unusedKeys as $key) {
+                        $allUnusedKeys[$key] = true;
+                    }
+                }
+            }
+
+            if (empty($allUnusedKeys)) {
+                $this->info("No unused translation keys found.");
+                return;
+            }
+
+            $totalUnused = count($allUnusedKeys);
+            $this->warn("Found {$totalUnused} unused translation key(s):");
+            $this->line("");
+
+            $tableRows = [];
+            foreach (array_keys($allUnusedKeys) as $key) {
+                $presentIn = [];
+                foreach ($unusedKeysPerLang as $language => $langKeys) {
+                    if (in_array($key, $langKeys, true)) {
+                        $presentIn[] = $language;
+                    }
+                }
+                $tableRows[] = [$key, implode(', ', $presentIn)];
+            }
+            $this->table(['Key', 'Languages'], $tableRows);
+
+            if (!$this->confirm("Do you want to remove these {$totalUnused} unused key(s)?")) {
+                $this->info("Cleanup cancelled.");
+                return;
+            }
+
+            $cleanRows = [];
+            foreach ($languages as $language) {
+                if (!isset($unusedKeysPerLang[$language])) {
+                    continue;
+                }
+
+                $languageFile = $langPath . '/' . $language . '.json';
+                $data = json_decode(file_get_contents($languageFile), true) ?: [];
+                $removed = 0;
+
+                foreach ($unusedKeysPerLang[$language] as $key) {
+                    unset($data[$key]);
+                    $removed++;
+                }
+
+                ksort($data);
+                file_put_contents($languageFile, json_encode($data, JSON_PRETTY_PRINT));
+                $cleanRows[] = [$language, $removed];
+            }
+
+            $this->table(['Language', 'Removed'], $cleanRows);
+            $this->info("Unused translation keys removed successfully!");
+        }
     }
 }

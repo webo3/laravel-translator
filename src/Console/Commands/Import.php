@@ -59,7 +59,7 @@ class Import extends Command
 
             ksort($data);
 
-            $json = json_encode($data, JSON_PRETTY_PRINT);
+            $json = json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
             file_put_contents($languageFile, $json);
 
             $statuses[] = [$language, $updated, $added];

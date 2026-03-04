@@ -131,7 +131,7 @@ class Translate extends Command
 
             // Sort and write
             ksort($targetData);
-            file_put_contents($targetFile, json_encode($targetData, JSON_PRETTY_PRINT));
+            file_put_contents($targetFile, json_encode($targetData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
 
             $rows[] = [$targetLang, $translatedCount, $skippedCount, $dedupSaved, $errors];
         }

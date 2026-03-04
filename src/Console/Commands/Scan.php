@@ -98,7 +98,7 @@ class Scan extends Command
             ksort($data);
             $rows[] = [$language, $created, $added];
 
-            $json = json_encode($data, JSON_PRETTY_PRINT);
+            $json = json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
             file_put_contents($languageFile, $json);
         }
 
@@ -173,7 +173,7 @@ class Scan extends Command
                 }
 
                 ksort($data);
-                file_put_contents($languageFile, json_encode($data, JSON_PRETTY_PRINT));
+                file_put_contents($languageFile, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
                 $cleanRows[] = [$language, $removed];
             }
 

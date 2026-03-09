@@ -114,7 +114,7 @@ class TranslationScanner
 
         // Full pattern: function_name( quote_pattern [, optional_args] )
         // Using #i flag (case-insensitive) but NOT #s (no dot-matches-newline)
-        return '#(?:' . $functions . ')\\(\\s*' . $quotePart . '\\s*(?:,.*?)?\\)#i';
+        return '#(?:' . $functions . ')\\(\\s*' . $quotePart . '\\s*(?:,[\\s\\S]*?)?\\)#i';
     }
 
     /**
